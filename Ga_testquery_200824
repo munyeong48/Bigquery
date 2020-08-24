@@ -1,0 +1,19 @@
+# 처음방문한 사람과 재방문한 사람의 구매가격
+select productPrice , visitnumber,  fullvisitorId, 
+if (visitnumber =1,sum (productPrice),null)  as one, #처음방문한 사람의 구매가격
+if (visitnumber !=1,sum (productPrice),null)  as notone #재방문한 사람의 구매가격
+
+from `myshin.ga_session`, unnest(hits), unnest(product) #hit.product.productPrice 배열구조 풀기 
+where productPrice IS NOT NULL and productPrice != 0 # 가격이 0이나 null값이 아닌 사람에 대하여
+group by productPrice,fullvisitorId, 1,2
+order by productPrice
+limit 100;
+#========================================================================================
+# fullvisitor id를 기준으로 가장 많은 페이지뷰수를 기록한 사용자와 그에 따른 세션 시간
+select totals.pageviews,   fullvisitorId, totals.timeOnSite
+from `myshin.ga_session`
+where totals.timeOnSite is not null
+group by fullvisitorId,1,2,3
+limit 1000;
+#=========================================================================================
+
