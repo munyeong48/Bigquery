@@ -70,7 +70,17 @@ GROUP BY 1
 where cnt > 1 
 )  group by 5
 
-
+# 20160111~20170631부터 날짜별 전송된 ga 데이터 개수
+SELECT COUNT(fullvisitorId) as users ,date
+from `bigquery-public-data.google_analytics_sample.ga_sessions_*` , unnest(hits) 
+where fullvisitorId in 
+(SELECT fullVisitorId FROM(
+select fullvisitorId
+from `bigquery-public-data.google_analytics_sample.ga_sessions_*`, UNNEST(hits)
+where _TABLE_SUFFIX BETWEEN '20160111' AND '20170631'
+)
+) group by 2
+order by date
 
 
 
