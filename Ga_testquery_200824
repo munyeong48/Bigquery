@@ -39,7 +39,7 @@ when "8" then "checkout_option"
 else 'fail'
 end as ecommerceaction
 from `bigquery-public-data.google_analytics_sample.ga_sessions_*`, unnest(hits)
-where totals.bounces is not null and ecommerceaction.action_type !="0" and _TABLE_SUFFIX BETWEEN '201600111' AND '20170631'
+where totals.bounces is not null and ecommerceaction.action_type !="0" and _TABLE_SUFFIX BETWEEN '20160111' AND '20170631'
 group by 1,2,3
 limit 1000;
 #===========================================================================================
@@ -55,7 +55,20 @@ GROUP BY 1
 )
 where cnt > 3 
 )  
-
+#=================================================================================================
+# 해당 브라우저를 사용하는 사용자들의 device category 종류의 따른 수
+SELECT COUNT(IF(device.deviceCategory= 'desktop', 1, null)) as sum_desktop, COUNT(IF(device.deviceCategory= 'mobile', 1, null)) as sum_mobile, COUNT(IF(device.deviceCategory= 'tablet' ,1, null)) as sum_tablet,
+count(device.deviceCategory) as sum, device.deviceCategory as kind
+from `bigquery-public-data.google_analytics_sample.ga_sessions_20170801` , unnest(hits) 
+where fullvisitorId in 
+(SELECT fullVisitorId FROM(
+select fullvisitorId,count(fullvisitorId) as cnt
+from `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`, UNNEST(hits)
+where device.browser = 'Chrome'
+GROUP BY 1
+)
+where cnt > 1 
+)  group by 5
 
 
 
