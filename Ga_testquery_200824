@@ -43,6 +43,19 @@ where totals.bounces is not null and ecommerceaction.action_type !="0" and _TABL
 group by 1,2,3
 limit 1000;
 #===========================================================================================
+#해당 사이트를 3번이상 들어갔다 나온사람의 event 정보
+select eventInfo.eventCategory, eventInfo.eventAction, eventInfo.eventLabel
+from `bigquery-public-data.google_analytics_sample.ga_sessions_20170801` , unnest(hits) 
+where fullvisitorId in 
+(SELECT fullVisitorId FROM(
+select fullvisitorId,count(fullvisitorId) as cnt
+from `bigquery-public-data.google_analytics_sample.ga_sessions_20170801`, UNNEST(hits)
+where page.pagePath like "%/google+redesign/electronics%"
+GROUP BY 1
+)
+where cnt > 3 
+)  
+
 
 
 
