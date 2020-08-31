@@ -8,14 +8,14 @@ where productPrice IS NOT NULL and productPrice != 0 and _TABLE_SUFFIX BETWEEN '
 group by productPrice,fullvisitorId, 1,2
 order by productPrice
 limit 100;
-#========================================================================================
+
 # fullvisitor id를 기준으로 가장 많은 페이지뷰수를 기록한 사용자와 그에 따른 세션 시간
 select totals.pageviews, fullvisitorId, totals.timeOnSite
 from `bigquery-public-data.google_analytics_sample.ga_sessions_*`
 where totals.timeOnSite is not null and _TABLE_SUFFIX BETWEEN '20170611' AND '20170631'
 group by fullvisitorId,1,2,3
 limit 1000;
-#=========================================================================================
+
 # 해당 기간 동안 가장많은 product를 구매한 횟수
 SELECT productQuantity,fullvisitorId 
 FROM `bigquery-public-data.google_analytics_sample.ga_sessions_*` , unnest(hits), unnest(product)
@@ -23,7 +23,7 @@ where productQuantity is not null and _TABLE_SUFFIX BETWEEN '20160801' AND '2017
 group by 1,2
 order by productQuantity Desc
 LIMIT 1000
-#=========================================================================================
+
 #해당 기간 동안 가장 많은 이탈율이 발생한 단계
 select fullvisitorId, totals.bounces,
 case ecommerceaction.action_type
@@ -42,7 +42,7 @@ from `bigquery-public-data.google_analytics_sample.ga_sessions_*`, unnest(hits)
 where totals.bounces is not null and ecommerceaction.action_type !="0" and _TABLE_SUFFIX BETWEEN '20160111' AND '20170631'
 group by 1,2,3
 limit 1000;
-#===========================================================================================
+
 #해당 사이트를 3번이상 들어갔다 나온사람의 event 정보
 select eventInfo.eventCategory, eventInfo.eventAction, eventInfo.eventLabel
 from `bigquery-public-data.google_analytics_sample.ga_sessions_20170801` , unnest(hits) 
@@ -55,7 +55,7 @@ GROUP BY 1
 )
 where cnt > 3 
 )  
-#=================================================================================================
+
 # 해당 브라우저를 사용하는 사용자들의 device category 종류의 따른 수
 SELECT COUNT(IF(device.deviceCategory= 'desktop', 1, null)) as sum_desktop, COUNT(IF(device.deviceCategory= 'mobile', 1, null)) as sum_mobile, COUNT(IF(device.deviceCategory= 'tablet' ,1, null)) as sum_tablet,
 count(device.deviceCategory) as sum, device.deviceCategory as kind
@@ -69,7 +69,7 @@ GROUP BY 1
 )
 where cnt > 1 
 )  group by 5
-#==================================================================================================
+
 # 20160111~20170631부터 날짜별 전송된 ga 데이터 개수
 SELECT COUNT(totals.bounces) as bounce ,date
 from `bigquery-public-data.google_analytics_sample.ga_sessions_*` , unnest(hits) 
@@ -77,5 +77,22 @@ where _TABLE_SUFFIX BETWEEN '20160111' AND '20170631'
 group by 2
 order by date
 
+#특정 기간(7월 한달) 동안 접속한 사용자와 그 사용자의 세션수를 출력하세요.
+SELECT fullvisitorid, count(visitNumber) as count  FROM `miteam-186206.82798328.ga_sessions_*`
+where _table_suffix between '20200701' and '20200731' 
+group by 1
+order by 2 desc
 
+#특정 기간(7월 한달)동안 접속한 사용자 중 해당 세션 방문 시간이 10s 이상인 사용자의 모든 페이지, 이벤트 정보를 출력하세요.
+SELECT page, eventInfo,totals.timeOnSite  FROM `miteam-186206.82798328.ga_sessions_*` ,unnest(hits)
+where totals.timeOnSite >10 and _table_suffix between '20200701' and '20200731'  
 
+#특정 기간(7월 한달)동안 접속한 사용자 중 해당 사용자의 (총 방문횟수 / 안드로이드 / 데스크탑 / 기타)를 통해 방문한 횟수를 Count 하세요.
+SELECT count(fullvisitorid)as sum_of_all, count(if(device.deviceCategory='mobile',1,null)) as mobile,count(if(device.deviceCategory='desktop',1,null)) as desktop,count(if(device.deviceCategory='tablet','1',null)) as sumofelse,
+count(
+(CASE
+      WHEN device.deviceCategory IN('mobile', 'desktop') THEN null
+      ELSE 1
+    END)) as alpha
+FROM `miteam-186206.82798328.ga_sessions_*`,unnest(hits) 
+where _table_suffix between '20200701' and '20200731'  
