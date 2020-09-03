@@ -114,7 +114,7 @@ order by 3
 
 # 12. 전체 방문 고객들의 접속 위치(city) 별 Count 계산
 SELECT geonetwork.city, count(geonetwork.city) as count FROM `miteam-186206.82798328.ga_sessions_*` 
-where geonetwork.city is not null and _table_suffix between "20200801" and "20200831"
+where geonetwork.city != "(not set)" and _table_suffix between "20200801" and "20200831"
 group by 1
 
 # 13. 8월 3일 방문 고객들의 7월 전체의 방문 페이지를 출력하세요.
