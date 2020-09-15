@@ -1,0 +1,14 @@
+# posix 시간을 kST 시간으로 변경
+# 변경시간을 hits. hour, minute를 통해 실제값 비교
+SELECT
+  fullVisitorId, TIMESTAMP_MILLIS( (visitStartTime * 1000) + hits.time) as millis_hit_time, 
+  TIMESTAMP_Seconds( (visitStartTime) + hits.time) as seconds_hit_time, 
+  FORMAT_TIMESTAMP('%c in %Z', TIMESTAMP_MILLIS(visitstarttime*1000 + hits.time), 'Asia/Seoul') as native_hit_timestamp,
+  DATETIME(TIMESTAMP_SECONDS(visitStartTime +  hits.time),"Asia/Seoul") as native,
+  FORMAT_TIMESTAMP('%Y-%m-%d-%H-%M-%S KST', TIMESTAMP_MILLIS(visitstarttime*1000 + hits.time), 'Asia/Seoul') as native_hit_timestamp2,
+  hits.hour,
+  hits.minute
+FROM
+  `miteam-186206.82798328.ga_sessions_*` , unnest(hits) as hits
+WHERE _TABLE_SUFFIX BETWEEN '20200801' AND '20200830'
+order by 2 desc
