@@ -1,0 +1,808 @@
+
+가설 검증에 필요한 Input 정보가 있는 테이블이 mart가 되어야함.
+ => 과정 중에 계속해서 업데이트 할 예정
+
+
+----------
+##이게 캠페인 유입
+
+WITH user_visit_check as(
+  SELECT 
+    clientId,
+    ((MAX(visitnumber) - MIN(visitnumber)) +1) AS visitTimes
+  FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+  WHERE _TABLE_SUFFIX BETWEEN '20200731' AND '20200731'
+  GROUP BY clientid
+), 
+campaign_row_data as(
+SELECT 
+  clientId,
+  d.visitTimes,
+  '0731~0731'as date,
+  visitNumber as  visitNum,
+  trafficsource.campaign as campaign,
+  trafficsource.source as source,
+  trafficsource.medium as medium,
+FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+  JOIN user_visit_check d USING(clientid)
+WHERE _TABLE_SUFFIX BETWEEN '20200731' AND '20200731'
+ORDER BY clientId, visitNum
+)
+
+SELECT
+  * 
+FROM(
+  SELECT
+    clientid,
+    visitTimes,
+    date,
+    visitNum,
+    (CASE
+      WHEN campaign IN('K5_teaser_07_2020', '2020_KIA_K5_Teaser_Jul-Aug', '2020_KIA_K5_Teaser_Jul') THEN 1
+      ELSE 0
+    END) as conversionYN,
+    campaign,
+    source,
+    medium
+  FROM campaign_row_data
+)
+GROUP BY 1,2,3,4,5,6,7,8
+ORDER BY 1,4
+
+
+## GA_Campaign TABLE
+
+SELECT 
+  trafficsource.campaign,
+  MIN(date) as minDate,
+  MAX(date) as maxDate
+FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+GROUP BY 1
+
+
+##### 4번가설 (경과일에 따른 노출빈도/전환율)
+WITH DATA AS(
+SELECT 
+  campaign as campaign_name,
+  minDate,
+  maxDate
+FROM `kia-russia-kmr.153704940.GA_Campaign` 
+)
+
+SELECT
+  DATETIME_DIFF(PARSE_DATETIME('%Y-%m-%d', CAST(Date as STRING)), PARSE_DATETIME('%Y-%m-%d',CONCAT(SUBSTR(minDate, 0, 4), "-", SUBSTR(minDate, 5, 2), "-", SUBSTR(minDate, 7, 2))), DAY) as difference,
+  Date,
+  campaign_name,
+  campaign_id,
+  clicks,
+  impressions,
+  User_Reached,
+  Frequency,
+  CTR,
+  ConversionRate,
+  conversions,
+  cost,
+  CPC,
+  minDate
+FROM `kia-russia-kmr.adh_support._ads_imp_add_camp_1`
+  LEFT JOIN DATA d USING(campaign_name) 
+
+
+
+
+
+###????
+WITH user_visit_check as(
+  SELECT 
+    clientId,
+    ((MAX(visitnumber) - MIN(visitnumber)) +1) AS visitTimes
+  FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+  WHERE _TABLE_SUFFIX BETWEEN '20200731' AND '20200731'
+  GROUP BY clientid
+), 
+campaign_row_data as(
+SELECT 
+  clientId,
+  d.visitTimes as totalVisitCount,
+  '0731~0731'as date,
+  visitNumber as  visitNum,
+  trafficsource.campaign as campaign,
+  trafficsource.source as source,
+  trafficsource.medium as medium,
+  device.deviceCategory as deviceCategory,
+  device.mobileDeviceModel as deviceModel,
+  device.operatingSystem as deviceOS,
+  geoNetwork.city as geoCity,
+  geoNetwork.country as geoCountry,
+  geoNetwork.region as georegion 
+FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+  JOIN user_visit_check d USING(clientid)
+WHERE _TABLE_SUFFIX BETWEEN '20200731' AND '20200731'
+ORDER BY clientId, visitNum
+)
+
+
+SELECT
+  * 
+FROM(
+  SELECT
+    clientId,
+    date,
+    totalVisitCount,
+    visitNum,
+    campaign,
+    (CASE
+      WHEN campaign IN('K5_teaser_07_2020', '2020_KIA_K5_Teaser_Jul-Aug', '2020_KIA_K5_Teaser_Jul') THEN 1
+      ELSE 0
+    END) as responseYN,
+    source,
+    medium,
+    deviceCategory,
+    deviceModel,
+    deviceOS,
+    geoCity,
+    geoCountry,
+    georegion
+  FROM campaign_row_data
+)
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14
+ORDER BY 1, 4
+
+
+
+
+
+
+
+
+'dealer-open/search_inpage'
+'lead-open/lopen_test-drive'
+'lead-send/lsubmit_test-drive'
+'price-interest/credit-open'
+'credit_steps/finished'
+'lead-open/lopen_credit_online_approval'
+'lead-send/lsubmit_credit'
+'model_visit/model_overview'
+'file/download_broshure'
+'price_interest/price_open'
+'trim-select/select_options'
+'file/download_price-list'
+'lead-send/lsubmit_price'
+'lead-send/lsubmit_price'
+'lead-send/lsubmit_call-back'
+'price_interest/configurator_open_model'
+'configurator_steps/finished'
+'lead-send/lsubmit_configurator'
+'lead-send/lsubmit_test-drive'
+
+
+
+
+
+
+
+##########
+WITH user_visit_check as(
+  SELECT 
+    clientId,
+    ((MAX(visitnumber) - MIN(visitnumber)) +1) AS visitTimes
+  FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+  WHERE _TABLE_SUFFIX BETWEEN '20200731' AND '20200731'
+  GROUP BY clientid
+), 
+campaign_row_data as(
+SELECT 
+  clientId,
+  d.visitTimes as totalVisitCount,
+  '0731~0731'as date,
+  visitNumber as  visitNum,
+  CONCAT(hits.eventInfo.eventCategory,'/',hits.eventInfo.eventAction) as category_action,
+  hits.eventInfo.eventLabel as label,
+  trafficsource.campaign as campaign,
+  trafficsource.source as source,
+  trafficsource.medium as medium,
+  device.deviceCategory as deviceCategory,
+  device.mobileDeviceModel as deviceModel,
+  device.operatingSystem as deviceOS,
+  device.browser as browser,
+  geoNetwork.city as geoCity,
+  geoNetwork.country as geoCountry,
+  geoNetwork.region as georegion 
+FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+  JOIN user_visit_check d USING(clientid)
+WHERE _TABLE_SUFFIX BETWEEN '20200731' AND '20200731'
+ORDER BY clientId, visitNum
+)
+,
+BONGIN AS(
+SELECT 
+  clientid,
+  CONCAT(clientid, visitid) as Session,
+  d.visitTimes as TOTAL,
+  visitNumber ,
+  hits.hitNumber,
+  hits.type,
+  hits.eventinfo.eventCategory,
+  hits.eventinfo.eventAction,
+  hits.eventinfo.eventLabel
+FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+   JOIN user_visit_check d USING(clientid)
+WHERE _TABLE_SUFFIX BETWEEN '20200731' AND '20200731'
+ORDER BY 1,2,4
+
+)
+
+SELECT
+   * 
+FROM(
+  SELECT
+    clientId,
+    date,
+    totalVisitCount,
+    visitNum,
+    category_action,
+    label,
+    campaign,
+    (CASE
+      WHEN category_action IN('dealer-open/search_inpage', 'lead-open/lopen_test-drive', 'lead-send/lsubmit_test-drive', 'price-interest/credit-open', 'credit_steps/finished',
+      'lead-open/lopen_credit_online_approval', 'lead-send/lsubmit_credit', 'model_visit/model_overview', 'file/download_broshure', 'price_interest/price_open', 'trim-select/select_options',
+      'file/download_price-list', 'lead-send/lsubmit_price', 'lead-send/lsubmit_price', 'lead-send/lsubmit_call-back', 'price_interest/configurator_open_model', 'configurator_steps/finished',
+      'lead-send/lsubmit_configurator', 'lead-send/lsubmit_test-drive') THEN 1
+      ELSE 0
+    END) as conversion_YN,
+    source,
+    medium,
+    deviceCategory,
+    deviceModel,
+    deviceOS,
+    browser,
+    geoCity,
+    geoCountry,
+    georegion
+  FROM campaign_row_data
+)
+
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17
+ORDER BY 1, 4
+
+###이건 킵(날짜추가 Goal)
+WITH user_visit_check as(
+  SELECT 
+    clientId,
+    ((MAX(visitnumber) - MIN(visitnumber)) +1) AS visitTimes
+  FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+  WHERE _TABLE_SUFFIX BETWEEN '20200731' AND '20200731'
+  GROUP BY clientid
+), 
+campaign_row_data as(
+SELECT 
+  clientId,
+  d.visitTimes as totalVisitCount,
+  '0731~0731'as cmpdate,
+  date,
+  visitNumber as  visitNum,
+  hits.hitNumber as hitNumber,
+  count(distinct(hits.hitNumber)) as totalhitcount,
+  hits.type as hitType,
+  CONCAT(hits.eventInfo.eventCategory,'/',hits.eventInfo.eventAction) as category_action,
+  hits.eventInfo.eventLabel as label,
+  trafficsource.campaign as campaign,
+  trafficsource.source as source,
+  trafficsource.medium as medium,
+  device.deviceCategory as deviceCategory,
+  device.mobileDeviceModel as deviceModel,
+  device.operatingSystem as deviceOS,
+  device.browser as browser,
+  geoNetwork.city as geoCity,
+  geoNetwork.country as geoCountry,
+  geoNetwork.region as georegion 
+FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+  JOIN user_visit_check d USING(clientid)
+WHERE _TABLE_SUFFIX BETWEEN '20200731' AND '20200731'
+GROUP BY 1,2,4,5,6,8,9,10,11,12,13,14,15,16,17,18,19,20
+ORDER BY clientId, visitNum
+) 
+, Base_DATA AS(
+SELECT
+   * 
+FROM(
+  SELECT
+    clientId,
+    cmpdate,
+    date,
+    totalVisitCount,
+    totalhitcount,
+    visitNum,
+    hitNumber,
+    hitType,
+    category_action,
+    label,
+    campaign,
+    (CASE
+      WHEN category_action IN('dealer-open/search_inpage', 'lead-open/lopen_test-drive', 'lead-send/lsubmit_test-drive', 'price-interest/credit-open', 'credit_steps/finished',
+      'lead-open/lopen_credit_online_approval', 'lead-send/lsubmit_credit', 'model_visit/model_overview', 'file/download_broshure', 'price_interest/price_open', 'trim-select/select_options',
+      'file/download_price-list', 'lead-send/lsubmit_price', 'lead-send/lsubmit_price', 'lead-send/lsubmit_call-back', 'price_interest/configurator_open_model', 'configurator_steps/finished',
+      'lead-send/lsubmit_configurator', 'lead-send/lsubmit_test-drive') THEN 1
+      ELSE 0
+    END) as conversion_YN,
+    source,
+    medium,
+    deviceCategory,
+    deviceModel,
+    deviceOS,
+    browser,
+    geoCity,
+    geoCountry,
+    georegion
+  FROM campaign_row_data
+)
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21
+ORDER BY 1, 4, 7
+)
+, SEQ_Cid AS(
+SELECT
+  clientid,
+  cmpdate,
+  date,
+  totalVisitCount,
+  totalhitcount,
+  hitNumber,
+  hitType,
+  (CASE WHEN category_action = 'dealer-open/'              THEN conversion_YN ELSE 0 END) AS Goal_1,
+  (CASE WHEN category_action = 'dealer-open/lopen_test-drive'             THEN conversion_YN ELSE 0 END) AS Goal_2,
+  (CASE WHEN category_action = 'dealer-open/lopen_credit'           THEN conversion_YN ELSE 0 END) AS Goal_3,
+  (CASE WHEN category_action = 'trim-select/select_options'             THEN conversion_YN ELSE 0 END) AS Goal_4,
+  (CASE WHEN category_action = 'trim-select/model_overview'                  THEN conversion_YN ELSE 0 END) AS Goal_5,
+  (CASE WHEN category_action = 'credit_steps/' THEN conversion_YN ELSE 0 END) AS Goal_6,
+  (CASE WHEN category_action = 'credit_steps/lsubmit_credit_online_approval'               THEN conversion_YN ELSE 0 END) AS Goal_7,
+  (CASE WHEN category_action = 'credit_steps/download_price-list'             THEN conversion_YN ELSE 0 END) AS Goal_8,
+  (CASE WHEN category_action = 'credit_steps/lopen_configurator'                 THEN conversion_YN ELSE 0 END) AS Goal_9,
+  (CASE WHEN category_action = 'credit_steps/download_broshure'              THEN conversion_YN ELSE 0 END) AS Goal_10,
+  (CASE WHEN category_action = 'lead-send/lsubmit_call-back'             THEN conversion_YN ELSE 0 END) AS Goal_11,
+  (CASE WHEN category_action = 'configurator_steps/finished'               THEN conversion_YN ELSE 0 END) AS Goal_12,
+  (CASE WHEN category_action = 'configurator_steps/price_open'                THEN conversion_YN ELSE 0 END) AS Goal_13,
+  (CASE WHEN category_action = 'configurator_steps/lsubmit_price'              THEN conversion_YN ELSE 0 END) AS Goal_14,
+  (CASE WHEN category_action = 'configurator_steps/lopen_call-back'            THEN conversion_YN ELSE 0 END) AS Goal_15,
+  (CASE WHEN category_action = 'configurator_steps/lsubmit' THEN conversion_YN ELSE 0 END) AS Goal_16,
+  (CASE WHEN category_action = 'configurator_steps/lsubmit_test-drive'            THEN conversion_YN ELSE 0 END) AS Goal_17,
+  (CASE WHEN category_action = 'configurator_steps/lsubmit_configurator'         THEN conversion_YN ELSE 0 END) AS Goal_18,
+  (CASE WHEN category_action = 'lead-send/lsubmit_credit'                 THEN conversion_YN  ELSE 0  END) AS Goal_19,
+  (CASE WHEN category_action = 'trim-select/'                                THEN conversion_YN  ELSE 0  END) AS Goal_20
+  
+FROM Base_DATA
+WHERE category_action is not null AND category_action in('dealer-open/search_inpage', 'lead-open/lopen_test-drive', 'lead-send/lsubmit_test-drive', 'price-interest/credit-open', 'credit_steps/finished',
+      'lead-open/lopen_credit_online_approval', 'lead-send/lsubmit_credit', 'model_visit/model_overview', 'file/download_broshure', 'price_interest/price_open', 'trim-select/select_options',
+      'file/download_price-list', 'lead-send/lsubmit_price', 'lead-send/lsubmit_price', 'lead-send/lsubmit_call-back', 'price_interest/configurator_open_model', 'configurator_steps/finished',
+      'lead-send/lsubmit_configurator', 'lead-send/lsubmit_test-drive') --AND clientid = '1015103931.1592618806' 
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27
+ORDER BY 1,4,6
+)
+, Summary_Cid as (
+SELECT
+  clientid,
+  cmpdate,
+  date,
+  totalVisitCount,
+  totalhitcount,
+  hitNumber,
+  hitType,
+  SUM(Goal_1) as Goal1,SUM(Goal_2) as Goal2,SUM(Goal_3) as Goal3,SUM(Goal_4) as Goal4,SUM(Goal_5) as Goal5,
+  SUM(Goal_6) as Goal6,SUM(Goal_7) as Goal7,SUM(Goal_8) as Goal8,SUM(Goal_9) as Goal9,SUM(Goal_10) as Goal10,
+  SUM(Goal_11) as Goal11,SUM(Goal_12) as Goal12,SUM(Goal_13) as Goal13,SUM(Goal_14) as Goal14,SUM(Goal_15) as Goal15,
+  SUM(Goal_16) as Goal16,SUM(Goal_17) as Goal17,SUM(Goal_18) as Goal18,SUM(Goal_19) as Goal19,SUM(Goal_20) as Goal20,
+FROM SEQ_Cid
+GROUP BY 1,2,3,4,5,6,7
+ORDER BY 1,4
+)
+
+--SELECT * FROM Base_DATA
+SELECT * FROM SEQ_Cid
+--SELECT * FROM Summary_Cid
+
+
+
+
+
+
+
+
+
+
+###########################GOAL 정리#########################
+'dealer-open/',
+'dealer-open/lopen_test-drive',
+'dealer-open/lopen_credit',
+'trim-select/select_options',
+'trim-select/model_overview',
+'credit_steps/',
+'credit_steps/lsubmit_credit_online_approval',
+'credit_steps/download_price-list',
+'credit_steps/lopen_configurator',
+'credit_steps/download_broshure',
+'lead-send/lsubmit_call-back',
+'configurator_steps/finished',
+'configurator_steps/price_open',
+'configurator_steps/lsubmit_price',
+'configurator_steps/lopen_call-back',
+'configurator_steps/lsubmit',
+'configurator_steps/lsubmit_test-drive',
+'configurator_steps/lsubmit_configurator',
+'lead-send/lsubmit_credit',
+'trim-select/'
+
+###########GOAL 정리버전(이게 진짜 goal20개임) #################################3
+WITH user_visit_check as(
+  SELECT 
+    clientId,
+    ((MAX(visitnumber) - MIN(visitnumber)) +1) AS visitTimes
+  FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+  WHERE _TABLE_SUFFIX BETWEEN '20200731' AND '20200731'
+  GROUP BY clientid
+), 
+campaign_row_data as(
+SELECT 
+  clientId,
+  d.visitTimes as totalVisitCount,
+  '0731~0731'as cmpdate,
+  date,
+  visitNumber as  visitNum,
+  visitId as visitID,
+  hits.hitNumber as hitNumber,
+  hits.type as hitType,
+  CONCAT(hits.eventInfo.eventCategory,'/',hits.eventInfo.eventAction) as category_action,
+  hits.eventInfo.eventLabel as label,
+  trafficsource.campaign as campaign,
+  trafficsource.source as source,
+  trafficsource.medium as medium,
+  device.deviceCategory as deviceCategory,
+  device.mobileDeviceModel as deviceModel,
+  device.operatingSystem as deviceOS,
+  device.browser as browser,
+  geoNetwork.city as geoCity,
+  geoNetwork.country as geoCountry,
+  geoNetwork.region as georegion 
+FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+  JOIN user_visit_check d USING(clientid)
+WHERE _TABLE_SUFFIX BETWEEN '20200731' AND '20200731'
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20
+ORDER BY clientId, visitNum
+) 
+, Base_DATA AS(
+SELECT
+   * 
+FROM(
+  SELECT
+    clientId,
+    cmpdate,
+    date,
+    totalVisitCount,
+    visitNum,
+    visitID,
+    hitNumber,
+    hitType,
+    category_action,
+    label,
+    campaign,
+    (CASE
+      WHEN category_action IN('dealer-open/search_configurator','dealer-open/search_inpage','dealer-open/search_feedback','dealer-open/search_cars','dealer-open/search_credit','dealer-open/search_special_offer','dealer-open/search_call-back','dealer-open/search_test-drive','dealer-open/search_price','lead-open/lopen_test-drive','lead-open/lopen_credit','trim-select/select_options','model_visit/model_overview','credit_steps/finished','lead-send/lsubmit_credit_online_approval','file/download_price-list','lead-open/lopen_configurator','lead/lopen_configurator','configurator_steps/finished','file/download_broshure','lead-send/lsubmit_call-back','price_interest/price_open','lead-send/lsubmit_price','lead/lopen_call-back','lead-open/lopen_call-back','lead-send/lsubmit_used_cars','lead/lsubmit_test-drive','lead-send/lsubmit_price','lead-send/lsubmit_credit_online_approval','lead/lead_lsubmit_test-drive','lead/lead_lsubmit_special_offer','lead/lsubmit_configurator','lead/lsubmit_price','lead/lead_lsubmit_price','lead/lsubmit_credit_online_approval','lead-send/lsubmit_special_offer','lead-send/lsubmit_credit','lead-send/lsubmit_cars','lead-send/lsubmit-cars','lead/lsubmit_credit','lead-send/lsubmit_call-back','lead-send/lsubmit_test-drive','lead/lsubmit_call-back','lead/lsubmit_special_offer','lead-send/lsubmit_configurator','lead-send/lsubmit_trade-in','lead/lsubmit_test-drive','lead-send/lsubmit_test-drive','lead-send/lsubmit_configurator','lead/lsubmit_configurator','lead-send/lsubmit_credit','trim-select/select_configurator','trim-select/select_options','trim-select/select_price','trim-select/select_credit','trim-select/select_properties','trim-select/select_cars') THEN 1
+      ELSE 0
+    END) as conversion_YN,
+    source,
+    medium,
+    deviceCategory,
+    deviceModel,
+    deviceOS,
+    browser,
+    geoCity,
+    geoCountry,
+    georegion
+  FROM campaign_row_data
+)
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21
+ORDER BY 1, 4, 7
+)
+, SEQ_Cid AS(
+SELECT
+  clientid,
+  cmpdate,
+  date,
+  totalVisitCount,
+  visitID,
+  hitNumber,
+  hitType,
+  --여기 수정해야함.
+  (CASE WHEN category_action IN ( 'dealer-open/search_configurator','dealer-open/search_inpage','dealer-open/search_feedback','dealer-open/search_cars','dealer-open/search_credit','dealer-open/search_special_offer','dealer-open/search_call-back','dealer-open/search_test-drive','dealer-open/search_price' )                           THEN conversion_YN ELSE 0 END) AS Dealer_Search,
+  (CASE WHEN category_action = 'lead-open/lopen_test-drive'                  THEN conversion_YN ELSE 0 END) AS Test_drive_start,
+  (CASE WHEN category_action = 'lead-open/lopen_credit'                      THEN conversion_YN ELSE 0 END) AS Credit_calc_start,
+  (CASE WHEN category_action = 'trim-select/select_options'                  THEN conversion_YN ELSE 0 END) AS Price_list_finished,
+  (CASE WHEN category_action = 'model_visit/model_overview'                  THEN conversion_YN ELSE 0 END) AS Model_overview,
+  (CASE WHEN category_action = 'credit_steps/finished'                       THEN conversion_YN ELSE 0 END) AS Credit_calc_finished,
+  (CASE WHEN category_action = 'lead-send/lsubmit_credit_online_approval' 	 THEN conversion_YN ELSE 0 END) AS Credit_calc_approval_lead_send,
+  (CASE WHEN category_action = 'file/download_price-list'          			 THEN conversion_YN ELSE 0 END) AS Price_download,
+  
+  (CASE WHEN category_action IN ('lead-open/lopen_configurator','lead/lopen_configurator')             THEN conversion_YN ELSE 0 END) AS Configurator_start,
+  
+  (CASE WHEN category_action = 'configurator_steps/finished'              	 THEN conversion_YN ELSE 0 END) AS Broshure_download,
+  (CASE WHEN category_action = 'file/download_broshure'                 	 THEN conversion_YN ELSE 0 END) AS Call_back_lead_send,
+  (CASE WHEN category_action = 'lead-send/lsubmit_call-back'                 THEN conversion_YN ELSE 0 END) AS Configurator_finished,
+  (CASE WHEN category_action = 'price_interest/price_open'               	 THEN conversion_YN ELSE 0 END) AS Price_list_start,
+  (CASE WHEN category_action = 'lead-send/lsubmit_price'            		 THEN conversion_YN ELSE 0 END) AS Price_list_lead_send,
+  
+  (CASE WHEN category_action IN('lead/lopen_call-back','lead-open/lopen_call-back')          THEN conversion_YN ELSE 0 END) AS Call_back_start,
+  
+  (CASE WHEN category_action IN ('lead-send/lsubmit_used_cars','lead/lsubmit_test-drive','lead-send/lsubmit_price','lead-send/lsubmit_credit_online_approval','lead/lead_lsubmit_test-drive','lead/lead_lsubmit_special_offer','lead/lsubmit_configurator','lead/lsubmit_price','lead/lead_lsubmit_price','lead/lsubmit_credit_online_approval','lead-send/lsubmit_special_offer','lead-send/lsubmit_credit','lead-send/lsubmit_cars','lead-send/lsubmit-cars','lead/lsubmit_credit','lead-send/lsubmit_call-back','lead-send/lsubmit_test-drive','lead/lsubmit_call-back','lead/lsubmit_special_offer','lead-send/lsubmit_configurator','lead-send/lsubmit_trade-in')                  THEN conversion_YN ELSE 0 END) AS lead_send,
+  
+  (CASE WHEN category_action IN ('lead/lsubmit_test-drive','lead-send/lsubmit_test-drive')     	   THEN conversion_YN ELSE 0 END) AS Test_drive_lead_send,
+  (CASE WHEN category_action IN ('lead-send/lsubmit_configurator','lead/lsubmit_configurator')     THEN conversion_YN ELSE 0 END) AS Configurator_lead_send,
+  (CASE WHEN category_action = 'lead-send/lsubmit_credit'                    THEN conversion_YN  ELSE 0  END) AS Credit_calc_lead_send,
+  (CASE WHEN category_action IN ('trim-select/select_configurator','trim-select/select_options','trim-select/select_price','trim-select/select_credit','trim-select/select_properties','trim-select/select_cars')                                THEN conversion_YN  ELSE 0  END) AS Select_trim
+  
+FROM Base_DATA
+
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27
+ORDER BY 1,4,5,6
+)
+, Summary_Cid as (
+SELECT
+  clientid,
+  cmpdate,
+  date,
+  totalVisitCount,
+  hitNumber,
+  hitType,
+  SUM(Dealer_Search) as Dealer_Search,SUM(Test_drive_start) as Test_drive_start,SUM(Credit_calc_start) as Credit_calc_start,SUM(Price_list_finished) as Price_list_finished,SUM(Model_overview) as Model_overview,  SUM(Credit_calc_finished) as Credit_calc_finished,SUM(Credit_calc_approval_lead_send) as Credit_calc_approval_lead_send,SUM(Price_download) as Price_download,SUM(Configurator_start) as Configurator_start,SUM(Broshure_download) as Broshure_download,SUM(Call_back_lead_send) as Call_back_lead_send,SUM(Configurator_finished) as Configurator_finished,SUM(Price_list_start) as Price_list_start,SUM(Price_list_lead_send) as Price_list_lead_send,SUM(Call_back_start) as Call_back_start,SUM(lead_send) as lead_send,SUM(Test_drive_lead_send) as Test_drive_lead_send,SUM(Configurator_lead_send) as Configurator_lead_send,SUM(Credit_calc_lead_send) as Credit_calc_lead_send,SUM(Select_trim) as Select_trim,
+FROM SEQ_Cid
+GROUP BY 1,2,3,4,5,6
+ORDER BY 1,4
+)
+
+--SELECT * FROM Base_DATA
+SELECT * FROM SEQ_Cid
+--SELECT * FROM Summary_Cid
+
+
+
+
+
+
+
+
+
+
+
+
+############# 시간대별 (지역별 - 시간)
+SELECT 
+  clientid,
+  visitId,
+  visitNumber,
+  (Case
+    --칼리닌그라드 시간
+    WHEN geoNetwork.region IN('Kaliningrad Oblast') THEN FORMAT_TIMESTAMP("%Y-%m-%d %H:%M:%S", TIMESTAMP_SECONDS(SAFE_CAST(visitStartTime AS INT64)), "UTC+02:00")
+    --모스크바 시간
+    WHEN geoNetwork.region IN('Adygea Republic', 'Arkhangelsk Oblast', 'Belgorod Oblast', 'Bryansk Oblast', 'Chechnya', 'Chuvashia Republic', 'Ingushetia', 'Ivanovo Oblast', 'Kabardino-Balkarian Republic', 'Kalmykia Republic', 'Kaluga Oblast', 'Karachay-Cherkessia', 'Kirov Oblast', 'Komi Republic', 'Kostroma Oblast', 'Krasnodar Krai', 'Kursk Oblast', 'Leningrad Oblast', 'Lipetsk Oblast', 'Mari El Republic', 'Mordovia Republic', 'Moscow', 'Moscow Oblast', 'Murmansk Oblast', 'Nenets Autonomous Okrug', 'Nizhny Novgorod Oblast', 'North Ossetia–Alania Republic', 'Novgorod Oblast', 'Oryol Oblast', 'Penza Oblast', 'Pskov Oblast', 'Republic of Dagestan', 'Republic of Karelia', 'Republic of Tatarstan', 'Rostov Oblast', 'Ryazan Oblast', 'Saint Petersburg', 'Samara Oblast', 'Smolensk Oblast', 'Stavropol Krai', 'Tambov Oblast', 'Tula Oblast', 'Tver Oblast', 'Udmurt Republic', 'Vladimir Oblast', 'Volgograd Oblast', 'Vologda Oblast', 'Voronezh Oblast', 'Yaroslavl Oblast') THEN FORMAT_TIMESTAMP("%Y-%m-%d %H:%M:%S", TIMESTAMP_SECONDS(SAFE_CAST(visitStartTime AS INT64)), "UTC+03:00")
+    --사마라 시간
+    WHEN geoNetwork.region IN('Astrakhan Oblast', 'Saratov Oblast', 'Ulyanovsk Oblast') THEN FORMAT_TIMESTAMP("%Y-%m-%d %H:%M:%S", TIMESTAMP_SECONDS(SAFE_CAST(visitStartTime AS INT64)), "UTC+04:00")
+    --예카테린부르크 시간
+    WHEN geoNetwork.region IN('Chelyabinsk Oblast', 'Khanty-Mansi Autonomous Okrug', 'Kurgan Oblast', 'Orenburg Oblast', 'Perm Krai', 'Republic of Bashkortostan', 'Sverdlovsk Oblast', 'Tyumen Oblast', 'Yamalo-Nenets Autonomous Okrug') 
+    THEN FORMAT_TIMESTAMP("%Y-%m-%d %H:%M:%S", TIMESTAMP_SECONDS(SAFE_CAST(visitStartTime AS INT64)), "UTC+05:00")
+    --옴스크 시간
+    WHEN geoNetwork.region IN('Altai Krai', 'Altai Republic', 'Kemerovo Oblast', 'Novosibirsk Oblast', 'Omsk Oblast') THEN FORMAT_TIMESTAMP("%Y-%m-%d %H:%M:%S", TIMESTAMP_SECONDS(SAFE_CAST(visitStartTime AS INT64)), "UTC+06:00")
+    --크라노야르스크 시간
+    WHEN geoNetwork.region IN('Krasnoyarsk Krai', 'Republic of Khakassia', 'Tomsk Oblast', 'Tuva Republic') THEN FORMAT_TIMESTAMP("%Y-%m-%d %H:%M:%S", TIMESTAMP_SECONDS(SAFE_CAST(visitStartTime AS INT64)), "UTC+07:00")
+    --이르쿠츠크 시간
+    WHEN geoNetwork.region IN('Buryatia', 'Irkutsk Oblast') THEN FORMAT_TIMESTAMP("%Y-%m-%d %H:%M:%S", TIMESTAMP_SECONDS(SAFE_CAST(visitStartTime AS INT64)), "UTC+08:00")
+    --야쿠츠크 시간
+    WHEN geoNetwork.region IN('Amur Oblast', 'Zabaykalsky Krai', 'Sakha Republic') THEN FORMAT_TIMESTAMP("%Y-%m-%d %H:%M:%S", TIMESTAMP_SECONDS(SAFE_CAST(visitStartTime AS INT64)), "UTC+09:00")
+    --블라디보스토크 시간
+    WHEN geoNetwork.region IN('Jewish Autonomous Oblast', 'Khabarovsk Krai', 'Primorsky Krai') THEN FORMAT_TIMESTAMP("%Y-%m-%d %H:%M:%S", TIMESTAMP_SECONDS(SAFE_CAST(visitStartTime AS INT64)), "UTC+10:00")
+    --마가단 시간
+    WHEN geoNetwork.region IN('Magadan Oblast', 'Sakhalin Oblast') THEN FORMAT_TIMESTAMP("%Y-%m-%d %H:%M:%S", TIMESTAMP_SECONDS(SAFE_CAST(visitStartTime AS INT64)), "UTC+11:00")
+    --캄차카 시간
+    WHEN geoNetwork.region IN('Kamchatka Krai', 'Chukotka Autonomous Okrug') THEN FORMAT_TIMESTAMP("%Y-%m-%d %H:%M:%S", TIMESTAMP_SECONDS(SAFE_CAST(visitStartTime AS INT64)), "UTC+12:00")
+  ELSE null
+  END) AS SessionStartTime,
+  hits.hitNumber,
+  CONCAT(hits.eventInfo.eventCategory,'/',hits.eventInfo.eventAction) as Goal,
+  hits.eventInfo.eventLabel
+FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+WHERE _TABLE_SUFFIX BETWEEN '20200810' AND '20200817'
+  AND (hits.contentGroup.contentGroup4 = 'Sorento prime' OR hits.contentGroup.contentGroup4 = 'Sorento')
+  AND hits.Type != 'PAGE'
+
+GROUP BY 1,2,3,4,5,6,7
+ORDER BY 1,3,5
+
+
+
+
+#### 사용자 모수
+WITH User1 AS(
+## sorento 페이지에 3회 이상 접속한 유저
+  SELECT clientId
+    FROM (
+      SELECT
+        clientId,
+        COUNT(DISTINCT CONCAT(CAST(fullVisitorId AS STRING), CAST(visitNumber AS STRING),
+        CAST(hits.hitNumber AS STRING))) AS cnt_chk,
+      FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) AS hits
+      WHERE _TABLE_SUFFIX BETWEEN '20200810' AND '20200817' AND LOWER(hits.page.pagePath) LIKE '%sorento%' 
+      GROUP BY clientId
+    ) WHERE cnt_chk > 3
+)
+, User2 AS(
+## sorento Campaign으로 유입된 유저
+ SELECT clientId
+ FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) AS hits
+ WHERE _TABLE_SUFFIX BETWEEN '20200810' AND '20200817' AND LOWER(trafficsource.campaign) LIKE '%sorento%' 
+ GROUP BY clientId
+)
+, TOTAL_USER AS(
+  SELECT * FROM User1
+  UNION ALL
+  SELECT * FROM User2
+)
+
+SELECT 
+  Clientid,
+  VisitId,
+  visitNumber,
+  visitStartTime,
+  CONCAT(hits.eventInfo.eventCategory,'/',hits.eventInfo.eventAction) as Goal,
+  hits.eventinfo.eventLabel,
+FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+WHERE _TABLE_SUFFIX BETWEEN '20200810' AND '20200817'
+  AND hits.type != 'PAGE'
+  AND clientId  IN ( SELECT DISTINCT clientid FROM TOTAL_USER  )
+GROUP BY 1,2,3,4,5,6
+ORDER BY 1
+
+
+
+
+####################### duration time 포함
+WITH DATA AS(
+SELECT 
+  Concat(clientid,'_',visitId) as Session,
+  visitNumber,
+  hits.hitNumber,
+  hits.page.pagePath,
+  hits.eventInfo.eventCategory,
+  hits.eventinfo.eventLabel,
+  geoNetwork.region,
+  geoNetwork.city
+FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+WHERE _TABLE_SUFFIX BETWEEN '20200810' AND '20200817'
+  AND LOWER(hits.eventInfo.eventCategory) like '%comparison%'
+  AND (hits.eventInfo.eventLabel LIKE '%Sorento%' OR hits.eventInfo.eventLabel LIKE '%Rio%')
+ 
+GROUP BY 1,2,3,4,5,6,7,8
+ORDER BY 1,2,3
+)
+
+SELECT 
+	*
+FROM(
+SELECT
+  clientid,
+  visitId,
+  visitNumber,
+  hits.hitNumber,
+  hits.eventInfo.eventLabel,
+  hits.page.pagePath,
+  (LEAD(hits.time, 1, NULL) OVER (PARTITION BY clientid, visitNumber ORDER BY clientid, visitNumber, hits.time) - hits.time) / 1000 AS PageDuration
+FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+WHERE
+  _TABLE_SUFFIX BETWEEN '20200801' AND '20200817'
+  AND CONCAT(clientId,'_',visitId) IN(SELECT Session FROM Data)
+  AND (SELECT value FROM hits.customDimensions where index=6) is not null
+)
+WHERE PageDuration is not null
+
+
+
+
+
+############# 페이지 조건
+SELECT
+  *
+FROM(
+SELECT
+  hits.page.pagePath as path
+FROM `kia-russia-kmr.153704940.ga_sessions_*`, UNNEST(hits) as hits
+WHERE
+  _TABLE_SUFFIX BETWEEN '20200801' AND '20200817'
+  AND hits.page.pagePath LIKE '/models/%'
+GROUP BY 1
+)
+WHERE path LIKE '%/desc/'
+ AND path not LIKE '%//%'
+
+ 
+ 
+################# u1 Val
+SELECT * FROM(
+SELECT
+  REGEXP_EXTRACT(other_data, 'u1=([^;]*)') AS u1_val,
+  TIMESTAMP_MICROS(Event_Time) as YYYYMMDD,
+  *
+FROM `kia-russia-kmr.dcm_data.p_activity_1221333`
+)
+WHERE u1_val is not null
+ORDER BY 2 
+ 
+###########기아 Custom Dimensions 추출 쿼리##########################
+
+SELECT 
+  (SELECT value FROM hits.customDimensions where index=1)	as	CD1_Client_ID,
+  (SELECT value FROM hits.customDimensions where index=3)	as	CD3_Session_ID,
+  (SELECT value FROM hits.customDimensions where index=4)	as	CD4_Hit_ID,
+  (SELECT value FROM hits.customDimensions where index=5)	as	CD5_Service,
+  (SELECT value FROM hits.customDimensions where index=6)	as	CD6_Complete_Sets,
+  (SELECT value FROM hits.customDimensions where index=7)	as	CD7_Loan_Program,
+  (SELECT value FROM hits.customDimensions where index=8)	as	CD8_Life_Insurance,
+  (SELECT value FROM hits.customDimensions where index=9)	as	CD9_Credit_Term,
+  (SELECT value FROM hits.customDimensions where index=10)	as	CD10_Car_Brand,
+  (SELECT value FROM hits.customDimensions where index=11)	as	CD11_Car_Model,
+  (SELECT value FROM hits.customDimensions where index=12)	as	CD12_Car_Generation,
+  (SELECT value FROM hits.customDimensions where index=13)	as	CD13_Production_Year,
+  (SELECT value FROM hits.customDimensions where index=14)	as	CD14_Body_Type,
+  (SELECT value FROM hits.customDimensions where index=15)	as	CD15_Engine,
+  (SELECT value FROM hits.customDimensions where index=16)	as	CD16_Transmission,
+  (SELECT value FROM hits.customDimensions where index=17)	as	CD17_Drive_Unit,
+  (SELECT value FROM hits.customDimensions where index=18)	as	CD18_Interior_Color,
+  (SELECT value FROM hits.customDimensions where index=19)	as	CD19_Equipment,
+  (SELECT value FROM hits.customDimensions where index=20)	as	CD20_MiliegeKM,
+  (SELECT value FROM hits.customDimensions where index=21)	as	CD21_Income,
+  (SELECT value FROM hits.customDimensions where index=22)	as	CD22_Education,
+  (SELECT value FROM hits.customDimensions where index=23)	as	CD23_Year_of_Birth,
+  (SELECT value FROM hits.customDimensions where index=24)	as	CD24_Price,
+  (SELECT value FROM hits.customDimensions where index=25)	as	CD25_Exterior_Color,
+  (SELECT value FROM hits.customDimensions where index=26)	as	CD26_Town,
+  (SELECT value FROM hits.customDimensions where index=27)	as	CD27_Dealership,
+  (SELECT value FROM hits.customDimensions where index=28)	as	CD28_Specific_Parameter,
+  (SELECT value FROM hits.customDimensions where index=29)	as	CD29_Question_Type
+FROM `kia-russia-kmr.153704940.ga_sessions_20200817`, UNNEST(hits) as hits
+
+ 
+ 
+ 
+ 
+ ##채윤석 전달용
+ SELECT 
+  trafficSource.adwordsClickInfo
+FROM `kia-russia-kmr.153704940.ga_sessions_20200818` 
+WHERE trafficSource.adwordsClickInfo.campaignId is not null
+  AND trafficSource.adwordsClickInfo.campaignId IN (9723593169, 10445349582)
+
+ 
+################# DT-Path Data 만드는중
+
+WITH DATA1 AS(
+  SELECT Site_ID_DCM, Site_DCM FROM `kia-russia-kmr.dcm_data.p_match_table_sites_1221333`
+  WHERE Site_DCM NOT LIKE '%Test%'
+  GROUP BY 1,2
+)
+, Path AS(
+SELECT
+    (STRING_AGG(REGEXP_EXTRACT(d.Site_DCM, r"^(?:\/\/|[^\/]+)*"), ">>")) AS user_full_path,
+    COUNT(DISTINCT user_id) AS user_count,
+    COUNT(*) AS path_count
+FROM `kia-russia-kmr.dcm_data.p_click_1221333`
+  JOIN DATA1 d USING(Site_ID_DCM)
+WHERE 
+    user_id <> "0"
+    AND user_id IS NOT NULL
+GROUP BY user_id
+)
+
+SELECT * FROM (
+SELECT 
+  user_full_path, SUM(user_count) as user_cnt, path_count
+FROM Path
+GROUP BY 1,3
+ORDER BY 2 DESC)
+
+WHERE user_cnt > 10
+
+ 
